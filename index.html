@@ -6,6 +6,8 @@
   <title>SES - STATUS</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.7/awesomplete.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.7/awesomplete.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     :root { --maroon: #800000; --gold: #D4AF37; }
@@ -22,6 +24,13 @@
     .btn-maroon:hover { background-color: #600000; color: #fff; }
     .form-label { font-weight: 600; color: #555; }
     .text-right { text-align: right !important; }
+
+    .awesomplete { display: block; }
+.awesomplete > ul { border: 1.5px solid var(--maroon); border-radius: 8px; margin-top: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+.awesomplete > ul > li { padding: 10px 14px; font-size: 15px; }
+.awesomplete > ul > li:hover,
+.awesomplete > ul > li[aria-selected="true"] { background: #f3e0e0; color: var(--maroon); }
+mark { background: transparent; color: var(--maroon); font-weight: bold; }
     
     /* Navigation Bottom */
     .nav-bottom { position: fixed; bottom: 0; width: 100%; background: white; border-top: 2px solid var(--maroon); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
@@ -67,9 +76,8 @@
       <form id="recordForm">
         <div class="mb-3">
           <label class="form-label">ผู้บันทึก</label>
-          <select id="staffName" class="form-select form-select-lg" required>
-            <option value="">-- เลือกผู้บันทึก --</option>
-          </select>
+          <input type="text" id="staffName" class="form-control form-control-lg"
+  placeholder="พิมพ์ชื่อเพื่อค้นหา..." autocomplete="off" required>
         </div>
         <div class="mb-3">
           <label class="form-label">แผนก</label>
@@ -175,14 +183,28 @@
 
   // โหลดข้อมูลเริ่มต้น
   window.onload = async () => {
-    const data = await apiRequest('getInitialData');
-    if (data) {
-      const staffSelect = document.getElementById('staffName');
-      const deptSelect = document.getElementById('dept');
-      data.staff.forEach(name => staffSelect.innerHTML += `<option value="${name}">${name}</option>`);
-      data.depts.forEach(dept => deptSelect.innerHTML += `<option value="${dept}">${dept}</option>`);
-    }
-  };
+  const data = await apiRequest('getInitialData');
+  if (data) {
+    // ผู้บันทึก → Awesomplete
+    const staffInput = document.getElementById('staffName');
+    new Awesomplete(staffInput, {
+      list: data.staff,
+      minChars: 0,
+      maxItems: 20,
+      autoFirst: false
+    });
+    // เปิด dropdown เมื่อ focus (คลิกครั้งแรก)
+    staffInput.addEventListener('focus', () => {
+      Awesomplete.all[0] && Awesomplete.all[0].evaluate();
+    });
+
+    // แผนก → ยังเป็น select เหมือนเดิม
+    const deptSelect = document.getElementById('dept');
+    data.depts.forEach(dept =>
+      deptSelect.innerHTML += `<option value="${dept}">${dept}</option>`
+    );
+  }
+};
 
   function changeTab(pageId, el) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
